@@ -1,0 +1,35 @@
+Matched pairs: 105
+Images without a mask: 0
+Masks without an image: 0
+
+Official split found in folders: True
+  train:   75 images (71.4%)
+  val  :   15 images (14.3%)
+  test :   15 images (14.3%)
+  expected: about 75% / 15% / 15%
+
+Unreadable files: 0
+Image sizes found (h, w): [(2048, 2048)]
+Image/mask size mismatches: 0
+Raw mask values seen (first masks): [0, 61, 245]
+
+Corrosion share of pixels per split (mean) and empty masks:
+  train: mean 27.4%  min 0.0%  max 100.0%  empty masks: 3
+  val  : mean 25.0%  min 2.1%  max 100.0%  empty masks: 0
+  test : mean 21.0%  min 2.2%  max 71.5%  empty masks: 0
+
+Identical image files appearing more than once: 0
+File names used in more than one split: 15
+  01: ['test', 'train', 'val']
+  02: ['test', 'train', 'val']
+  03: ['test', 'train', 'val']
+  04: ['test', 'train', 'val']
+  05: ['test', 'train', 'val']
+  06: ['test', 'train', 'val']
+  07: ['test', 'train', 'val']
+  08: ['test', 'train', 'val']
+  09: ['test', 'train', 'val']
+  10: ['test', 'train', 'val']
+LEAKAGE WARNING: review the lines above before training.
+
+Saved splits.json and dataset_report.txt
