@@ -1,0 +1,24 @@
+{
+  "encoder": "resnet34",
+  "encoder_weights": "imagenet",
+  "img_size": 512,
+  "batch_size": 4,
+  "epochs": 40,
+  "lr": 0.0003,
+  "threshold": 0.5,
+  "seed": 42,
+  "device": "cuda",
+  "official_split": true,
+  "split_counts": {
+    "train": 75,
+    "val": 15,
+    "test": 15
+  },
+  "versions": {
+    "torch": "2.12.0.dev20260408+cu128",
+    "segmentation_models_pytorch": "0.6.0",
+    "albumentations": "2.0.8",
+    "opencv": "5.0.0",
+    "numpy": "2.5.1"
+  }
+}
