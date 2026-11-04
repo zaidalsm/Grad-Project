@@ -1,0 +1,26 @@
+{
+  "device": "cuda",
+  "official_split": true,
+  "threshold": 0.5,
+  "best_epoch": 38,
+  "val": {
+    "images": 15,
+    "iou": 0.8697,
+    "dice": 0.9303,
+    "precision": 0.9356,
+    "recall": 0.9251,
+    "mean_image_iou": 0.8276,
+    "mean_seconds_per_image": 0.088,
+    "max_seconds_per_image": 0.127
+  },
+  "test": {
+    "images": 15,
+    "iou": 0.8077,
+    "dice": 0.8936,
+    "precision": 0.8628,
+    "recall": 0.9267,
+    "mean_image_iou": 0.8249,
+    "mean_seconds_per_image": 0.109,
+    "max_seconds_per_image": 0.149
+  }
+}
