@@ -17,13 +17,19 @@
     Frič, M. (2024). Corrosion in Industrial Complexes in Ostrava (Version v2)
     [Data set]. Zenodo. https://doi.org/10.5281/zenodo.11235637
 
-    ## Contents
-    - 105 images, 2048x2048 pixels, Nikon D5600
-    - Official split: train / validation / test (75:15:15)
-    - Number of masks: ...
-    - Mask format and values: ...
+   ## Contents
+- 105 images, 2048x2048 pixels, Nikon D5600
+- Official split used: 75 train, 15 validation, 15 test images
+- Number of masks: [copy from dataset_report.txt]
+- Mask values: [copy the "Raw mask values seen" line from dataset_report.txt]
+- No image appears in more than one split (see the end of dataset_report.txt)
 
-    ## My observations on label quality
-    1. ...
-    2. ...
-    3. ...
+## My observations on label quality
+1. On clear objects such as the key and the nut, the mask follows the edges
+   closely, so these labels are good.
+2. On large, messy rust areas (the rusty plate), the mask edge is rough and
+   includes small separate blobs. It is partly a judgement call where rust
+   ends and dark metal begins.
+3. Photos have many different backgrounds (wood, concrete, metal), and some
+   backgrounds are rust-coloured. This is hard for a model, though the masks
+   themselves are not wrong.
