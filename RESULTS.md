@@ -22,15 +22,13 @@ because the best epoch was picked on it.
 
 ## Worst cases on the test set
 
-| Image | IoU | What went wrong |
-|---|---|---|
-| [file name] key on a wooden board | about 0.26 | The key is found, but large brown areas of the wood are also marked as rust (false alarm). The light round head of the key is missed. |
-| [file name] rusty plate with two rods | 0.69 | The big rust area is found, but the right-hand rod (dark, purple-brown) is not marked, and some extra areas at the edges are. The hand-drawn mask is rough here, so part of the gap may come from the labels. |
-| [file name] rusty nut on concrete | 0.52 | The nut is marked correctly, but a patch around a small white mark at the bottom is also marked. The rust area is small, so one false patch lowers the score a lot. |
+| 07.jpg (key on a wooden board) | 0.2604 | Real rust is 8.1% of the image but the model marks 23.7%: brown wood is marked as rust. The light round head of the key is missed. |
+| 14.jpg (rusty nut on concrete) | 0.5244 | Real rust is only 2.2% of the image, the model marks 4.1%. The nut is found, but a false patch near a small white mark halves the score because the rust area is tiny. |
+| 04.jpg (rusty plate with two rods) | 0.6892 | Real rust 64.0%, predicted 67.8%. The right-hand dark rod is missed and extra areas are marked (precision 0.79, recall 0.84). The mask edge is rough here. |
 
 Pattern: the errors are mostly false alarms on rust-coloured surfaces (brown
 wood, marks on concrete), plus rust that is darker than usual being missed.
-This matches precision being lower than recall.
+This matches precision being lower than recall,the model over-marks rust on 07, 14 and 03 (03: true 38.9%, predicted 45.2%) and under-marks it on 08 (precision 0.97 but recall 0.79, true 22.0%, predicted 17.9%), so errors go in both directions.
 
 ## Limits of these results
 
@@ -44,6 +42,16 @@ This matches precision being lower than recall.
 
 Dice of at least 0.85 on images not used for training or for choosing
 settings. This is fixed before the final test, which will use new photos.
+
+## Training
+
+Training ran for 40 epochs at about 2 s each (about 75 s in total on the GPU).
+Training loss fell from 1.10 to about 0.2 and validation loss from 2.64 to
+about 0.25. The two stay close, so the model is not overfitting. Validation
+IoU rose from 0.51 to about 0.85-0.87. It swung a lot in early epochs (for
+example 0.59 at epoch 5) because the validation set has only 15 images, and
+it settled after epoch 35. The best epoch (38, validation IoU 0.869) is
+within noise of epochs 36 to 40.
 
 ## Next (Week 5)
 
