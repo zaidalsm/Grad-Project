@@ -53,6 +53,11 @@ example 0.59 at epoch 5) because the validation set has only 15 images, and
 it settled after epoch 35. The best epoch (38, validation IoU 0.869) is
 within noise of epochs 36 to 40.
 
+## Real-Lighting Field Photo Evaluation (Visual Inspection)
+- **Evaluated:** Ran `predict_one.py` across real tank-interior and field condition photos under various lighting (dim, flash, shadows).
+- **Observations:** Thick, heavy structural corrosion under low/enclosed lighting was localized accurately (e.g., `image105_1.jpeg` at 16.2% coverage). However, peeling paint, surface grime, and discolored coatings triggered false alarms (false positives), matching the model's known weak spot.
+- **Artifacts Saved:** Selected key success and failure overlays saved into `lighting_examples/` for supervisor review.
+
 ## Next (Week 5)
 
 1. Look at the worst validation images and check for the same pattern.
