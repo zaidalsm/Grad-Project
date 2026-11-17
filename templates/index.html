@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrosion Inspection</title>
+<style>
+  :root { --bg:#f4f5f7; --card:#fff; --text:#1d232b; --muted:#5d6672; --line:#d9dde3;
+          --accent:#1f5fbf; --bad:#b3261e; --good:#1b7a3d; --warn:#9a6700; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Segoe UI, Arial, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:#1d232b; color:#fff; padding:12px 20px; display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
+  header h1 { font-size:18px; margin:0; flex:1; }
+  .pill { font-size:13px; padding:4px 10px; border-radius:99px; background:#39424e; }
+  .pill.ok { background:#1b7a3d; } .pill.bad { background:#b3261e; }
+  main { max-width:1200px; margin:0 auto; padding:16px; display:grid; gap:16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  video, img.pic { width:100%; background:#000; border-radius:6px; display:block; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; align-items:center; }
+  button { font:inherit; padding:8px 14px; border:1px solid var(--line); background:#fff; border-radius:6px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .dpad { display:grid; grid-template-columns: repeat(3, 64px); gap:6px; justify-content:start; }
+  .dpad button { height:52px; font-size:20px; }
+  .dpad .stop { background:var(--bad); color:#fff; border-color:var(--bad); font-size:14px; font-weight:600; }
+  input, textarea, select { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:6px; width:100%; }
+  label { font-size:13px; color:var(--muted); display:block; margin-top:8px; }
+  .msg { font-size:14px; margin-top:8px; min-height:20px; }
+  .msg.err { color:var(--bad); } .msg.ok { color:var(--good); }
+  .result { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .big { font-size:34px; font-weight:700; }
+  .note { font-size:12px; color:var(--muted); }
+  .banner { background:#fff6dd; border:1px solid #ecd58a; color:var(--warn); padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:10px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  td img { width:64px; height:48px; object-fit:cover; border-radius:4px; cursor:pointer; }
+  .st-pending { color:var(--warn); } .st-accepted { color:var(--good); } .st-rejected { color:var(--bad); }
+  dialog { border:1px solid var(--line); border-radius:8px; max-width:900px; width:92%; }
+  dialog::backdrop { background:rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Corrosion Inspection</h1>
+  <span class="pill" id="robotPill">Robot: …</span>
+  <span class="pill" id="modelPill">Model: …</span>
+</header>
+
+<main>
+  <section>
+    <h2>Camera</h2>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas" hidden></canvas>
+    <div class="row">
+      <button id="camBtn">Start camera</button>
+      <button id="snapBtn" class="primary" disabled>Capture and analyse</button>
+      <label style="margin:0">or upload a photo: <input type="file" id="file" accept="image/*" style="width:auto"></label>
+    </div>
+    <div class="msg" id="camMsg"></div>
+  </section>
+
+  <section>
+    <h2>Robot control</h2>
+    <div class="banner" id="mockBanner" hidden>Mock mode: commands are only logged. The robot does not move.</div>
+    <div class="dpad">
+      <span></span><button data-cmd="forward" title="Forward">▲</button><span></span>
+      <button data-cmd="left" title="Left">◀</button>
+      <button data-cmd="stop" class="stop">STOP</button>
+      <button data-cmd="right" title="Right">▶</button>
+      <span></span><button data-cmd="back" title="Back">▼</button><span></span>
+    </div>
+    <div class="msg" id="cmdMsg"></div>
+    <div class="note" id="lastCmd"></div>
+  </section>
+
+  <section class="wide" id="resultBox" hidden>
+    <h2>Result</h2>
+    <div class="result">
+      <div><div class="note">Original</div><img class="pic" id="origImg" alt="original"></div>
+      <div><div class="note">Detected corrosion (red)</div><img class="pic" id="overImg" alt="overlay"></div>
+    </div>
+    <div class="row">
+      <div><div class="note">Visible corroded area</div><div class="big" id="pct">–</div></div>
+      <div class="note" style="flex:1">This is the share of the visible surface that looks corroded. It does not show depth, thickness or remaining life. Rust-coloured surfaces (for example wood) can cause false alarms, so a person must review the result.</div>
+    </div>
+    <div class="row">
+      <div style="flex:1;min-width:140px"><label>Zone *</label><input id="zone" placeholder="A" maxlength="40"></div>
+      <div style="flex:3;min-width:200px"><label>Notes</label><input id="notes" placeholder="optional" maxlength="2000"></div>
+      <button id="saveBtn" class="primary" style="align-self:flex-end">Save inspection</button>
+    </div>
+    <div class="msg" id="saveMsg"></div>
+  </section>
+
+  <section class="wide">
+    <h2>Saved inspections</h2>
+    <div class="row">
+      <label style="margin:0">Zone filter <input id="zoneFilter" style="width:120px" placeholder="all"></label>
+      <button id="reportBtn">Open report</button>
+    </div>
+    <table>
+      <thead><tr><th>Image</th><th>ID</th><th>Date</th><th>Zone</th><th>Corrosion</th><th>Review</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="msg" id="listMsg"></div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h2 id="dTitle"></h2>
+  <div class="result"><img class="pic" id="dImg" alt=""><img class="pic" id="dOver" alt=""></div>
+  <label>Comment</label><textarea id="dComment" rows="2"></textarea>
+  <div class="row">
+    <button id="dAccept">Accept</button><button id="dReject">Reject</button>
+    <button id="dPending">Back to pending</button><button id="dClose" style="margin-left:auto">Close</button>
+  </div>
+  <div class="msg" id="dMsg"></div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+let stream = null, token = null, items = [], current = null;
+
+function setMsg(el, text, cls) { el.textContent = text || ""; el.className = "msg " + (cls || ""); }
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  let data = {};
+  try { data = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error(data.error || ("Server error " + r.status));
+  return data;
+}
+const postJson = (url, body) => api(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+
+// ----- status -----
+async function refreshStatus() {
+  try {
+    const s = await api("/api/status");
+    const rp = $("robotPill");
+    rp.textContent = "Robot: " + (s.robot.connected ? "connected" : "not connected (" + s.robot.mode + ")");
+    rp.className = "pill " + (s.robot.connected ? "ok" : "");
+    $("mockBanner").hidden = s.robot.mode !== "mock";
+    $("lastCmd").textContent = s.robot.last_command ? "Last command: " + s.robot.last_command + " at " + s.robot.last_time : "";
+    const mp = $("modelPill");
+    mp.textContent = "Model: " + ({loading: "loading…", ready: "ready", error: "error"}[s.model.state]);
+    mp.className = "pill " + (s.model.state === "ready" ? "ok" : s.model.state === "error" ? "bad" : "");
+    if (s.model.state === "error") mp.title = s.model.error;
+  } catch (e) {
+    $("robotPill").textContent = "Server not reachable"; $("robotPill").className = "pill bad";
+  }
+}
+
+// ----- robot -----
+document.querySelectorAll("[data-cmd]").forEach(b => b.addEventListener("click", async () => {
+  try {
+    const r = await postJson("/api/command", {cmd: b.dataset.cmd});
+    setMsg($("cmdMsg"), "Sent: " + r.cmd + " (" + r.mode + ")", "ok");
+  } catch (e) { setMsg($("cmdMsg"), e.message, "err"); }
+  refreshStatus();
+}));
+
+// ----- camera -----
+$("camBtn").addEventListener("click", async () => {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; $("video").srcObject = null;
+    $("camBtn").textContent = "Start camera"; $("snapBtn").disabled = true; return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video: true});
+    $("video").srcObject = stream;
+    $("camBtn").textContent = "Stop camera"; $("snapBtn").disabled = false; setMsg($("camMsg"), "");
+  } catch (e) { setMsg($("camMsg"), "Camera not available (" + e.name + "). Upload a photo instead.", "err"); }
+});
+
+$("snapBtn").addEventListener("click", () => {
+  const v = $("video"), c = $("canvas");
+  if (!v.videoWidth) { setMsg($("camMsg"), "Camera is not ready yet.", "err"); return; }
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext("2d").drawImage(v, 0, 0);
+  c.toBlob(blob => analyse(blob, "capture.jpg"), "image/jpeg", 0.95);
+});
+$("file").addEventListener("change", e => { if (e.target.files[0]) analyse(e.target.files[0], e.target.files[0].name); e.target.value = ""; });
+
+async function analyse(blob, name) {
+  setMsg($("camMsg"), "Analysing…"); $("snapBtn").disabled = true;
+  const fd = new FormData(); fd.append("image", blob, name);
+  try {
+    const r = await api("/api/analyze", {method: "POST", body: fd});
+    token = r.token;
+    $("origImg").src = r.image_url; $("overImg").src = r.overlay_url;
+    $("pct").textContent = r.corrosion_percent + " %";
+    $("resultBox").hidden = false; setMsg($("saveMsg"), "");
+    setMsg($("camMsg"), "Done in " + r.seconds + " s.", "ok");
+  } catch (e) { setMsg($("camMsg"), e.message, "err"); }
+  $("snapBtn").disabled = !stream;
+}
+
+// ----- save -----
+$("saveBtn").addEventListener("click", async () => {
+  try {
+    const r = await postJson("/api/inspections", {token, zone: $("zone").value, notes: $("notes").value});
+    setMsg($("saveMsg"), "Saved as " + r.code, "ok");
+    token = null; $("notes").value = ""; loadList();
+  } catch (e) { setMsg($("saveMsg"), e.message, "err"); }
+});
+
+// ----- list -----
+function esc(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+async function loadList() {
+  try {
+    items = await api("/api/inspections");
+    const f = $("zoneFilter").value.trim();
+    const shown = f ? items.filter(i => i.zone === f) : items;
+    $("rows").innerHTML = shown.map(i => `<tr>
+      <td><img src="${esc(i.overlay_url)}" data-id="${i.id}" alt=""></td><td>${esc(i.code)}</td>
+      <td>${esc(i.date)} ${esc(i.time)}</td><td>${esc(i.zone)}</td><td>${i.corrosion_percent} %</td>
+      <td class="st-${esc(i.review_status)}">${esc(i.review_status)}</td>
+      <td><button data-id="${i.id}">Review</button></td></tr>`).join("");
+    setMsg($("listMsg"), shown.length ? "" : "No inspections yet.");
+  } catch (e) { setMsg($("listMsg"), e.message, "err"); }
+}
+$("zoneFilter").addEventListener("input", loadList);
+$("rows").addEventListener("click", e => { const id = e.target.dataset.id; if (id) openReview(+id); });
+$("reportBtn").addEventListener("click", () => {
+  const z = $("zoneFilter").value.trim();
+  window.open("/report" + (z ? "?zone=" + encodeURIComponent(z) : ""), "_blank");
+});
+
+// ----- review -----
+function openReview(id) {
+  current = items.find(i => i.id === id); if (!current) return;
+  $("dTitle").textContent = current.code + " – zone " + current.zone + " – " + current.corrosion_percent + " %";
+  $("dImg").src = current.image_url; $("dOver").src = current.overlay_url;
+  $("dComment").value = current.review_comment || ""; setMsg($("dMsg"), "");
+  $("dlg").showModal();
+}
+async function review(status) {
+  try {
+    await postJson("/api/inspections/" + current.id + "/review", {status, comment: $("dComment").value});
+    $("dlg").close(); loadList();
+  } catch (e) { setMsg($("dMsg"), e.message, "err"); }
+}
+$("dAccept").onclick = () => review("accepted");
+$("dReject").onclick = () => review("rejected");
+$("dPending").onclick = () => review("pending");
+$("dClose").onclick = () => $("dlg").close();
+
+refreshStatus(); loadList(); setInterval(refreshStatus, 3000);
+</script>
+</body>
+</html>
